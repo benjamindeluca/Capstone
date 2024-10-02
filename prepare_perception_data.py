@@ -57,6 +57,7 @@ def create_annotations_txt(perception_path, dataset_path):
     class_mapping = {
     'Shark': 0,
     'RIP': 1,
+    'Human': 2
     }
 
     # for each JSON in the perception data

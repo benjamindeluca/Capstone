@@ -9,9 +9,10 @@ def main(path_to_data):
     model.train(
         data=path_to_data,  # path to the data.yaml file
         epochs=100,  # number of training epochs
+        patience=15,
         imgsz=640,  # image size
         batch=16,  # batch size
-        name='yolov8_custom',  # experiment name
+        name='yolov8_newsharks_newpeeps',  # experiment name
         verbose=True,
         plots=True
     )
