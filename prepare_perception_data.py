@@ -8,10 +8,15 @@ import os
 import shutil
 import random
 import json
+import cv2
 
 
 # Program Constants
 SPLIT_RATIO = 0.2
+CUT_SMALL_RIPS = True
+VISUALISE = True
+MIN_RIP_WIDTH = 0.3 # normalised
+MIN_RIP_HEIGHT = 0.3 # normalised
 
 def main(perception_path, dataset_path):
 
@@ -51,6 +56,8 @@ def create_annotations_txt(perception_path, dataset_path):
     :param class_mapping: Dictionary mapping class names to YOLO class IDs.
     """
     # Create the output directory if it doesn't exist
+    image_dir = os.path.join(dataset_path,'train/images')
+    os.makedirs(image_dir, exist_ok=True)
     output_dir = os.path.join(dataset_path,'train/labels')
     os.makedirs(output_dir, exist_ok=True)
 
@@ -91,14 +98,19 @@ def create_annotations_txt(perception_path, dataset_path):
                                     continue
 
                                 # Bounding box coordinates
-                                x_center, y_center = bbox['origin']
+                                x_bottomright, y_bottomright = bbox['origin']
                                 width, height = bbox['dimension']
-
                                 # Convert to YOLO format (normalized)
-                                x_center = x_center / image_width
-                                y_center = y_center / image_height
                                 norm_width = width / image_width
                                 norm_height = height / image_height
+                                x_center = (x_bottomright+(width/2)) / image_width
+                                y_center = (y_bottomright+(height/2)) / image_height
+
+                                if CUT_SMALL_RIPS and class_name=="RIP":
+                                    bbox = [x_center, y_center, norm_width, norm_height]
+                                    image_path = os.path.join(image_dir, os.path.splitext(os.path.basename(image_filename))[0] + '.png')
+                                    too_small = check_for_small_box(bbox,image_path)
+                                    if too_small: continue # if rip box is too small, don't count it
 
                                 # Write to .txt file in YOLO format
                                 txt_file.write(f"{class_id} {x_center} {y_center} {norm_width} {norm_height}\n")
@@ -170,7 +182,43 @@ def train_test_split(dataset_path):
         if os.path.exists(annotation_src):
             shutil.move(annotation_src, annotation_dst)
 
+def check_for_small_box(bbox, image_path):
 
+    x_center, y_center, box_width, box_height = bbox
+
+    if box_width < MIN_RIP_WIDTH or box_height < MIN_RIP_HEIGHT:
+        output = True
+    else:
+        output = False
+
+    if VISUALISE and output==True:
+        image = cv2.imread(image_path)
+        h, w, _ = image.shape  # Get image dimensions (height, width)
+
+        # Denormalize bbox values: (x, y, width, height)
+
+        # Convert normalized values to pixel coordinates
+        x_center_pixel = int(x_center * w)
+        y_center_pixel = int(y_center * h)
+        box_width_pixel = int(box_width * w)
+        box_height_pixel = int(box_height * h)
+
+        # Calculate the top-left corner and bottom-right corner of the bounding box
+        x1 = int(x_center_pixel - box_width_pixel / 2)
+        y1 = int(y_center_pixel - box_height_pixel / 2)
+        x2 = int(x_center_pixel + box_width_pixel / 2)
+        y2 = int(y_center_pixel + box_height_pixel / 2)
+
+        # Draw rectangle on the image (in red, thickness of 2)
+        image_with_box = cv2.rectangle(image.copy(), (x1, y1), (x2, y2), (0, 0, 255), 2)
+        cv2.imshow('image with box',image_with_box)
+        print(f"This box has width {box_width} and height {box_height}...")
+        if output: print("This box is too small")
+        else: print("This box is good")
+        cv2.waitKey(0)  # Press any key to close the window
+        cv2.destroyAllWindows()
+
+    return output
 
 if __name__ == '__main__':
 

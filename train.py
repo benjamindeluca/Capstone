@@ -14,7 +14,8 @@ def main(path_to_data):
         batch=16,  # batch size
         name='yolov8_newsharks_newpeeps',  # experiment name
         verbose=True,
-        plots=True
+        plots=True,
+        mosaic=0
     )
 
     # Evaluate the model on the validation set
