@@ -14,9 +14,9 @@ import cv2
 # Program Constants
 SPLIT_RATIO = 0.2
 CUT_SMALL_RIPS = True
-VISUALISE = True
-MIN_RIP_WIDTH = 0.3 # normalised
-MIN_RIP_HEIGHT = 0.3 # normalised
+VISUALISE = False
+MIN_RIP_WIDTH = 0.25 # normalised
+MIN_RIP_HEIGHT = 0.25 # normalised
 
 def main(perception_path, dataset_path):
 
